@@ -1,5 +1,5 @@
-use druid::{Data, WidgetPod, Vec2, Selector};
 use druid::widget::prelude::*;
+use druid::{Data, Selector, Vec2, WidgetPod};
 
 pub const SET_SCALE_ACTION: Selector<f64> = Selector::new("set-scale");
 pub const SET_TRANSLATION_ACTION: Selector<Vec2> = Selector::new("set-translation");
@@ -7,15 +7,14 @@ pub const SET_TRANSLATION_ACTION: Selector<Vec2> = Selector::new("set-translatio
 pub struct Transform<T: Data, W: Widget<T>> {
     translation: Vec2,
     scale: f64,
-    inner: WidgetPod<T, W>
+    inner: WidgetPod<T, W>,
 }
 
 impl<T, W> Transform<T, W>
 where
     T: Data,
-    W: Widget<T>
+    W: Widget<T>,
 {
-
     pub fn new(widget: W) -> Self {
         Self {
             translation: Vec2::ZERO,
@@ -32,16 +31,10 @@ where
         };
 
         let maybe_event = match event {
-            Event::MouseDown(m) => {
-                Some(Event::MouseDown(scale_pos(m)))
-            },
-            Event::MouseUp(m) => {
-                Some(Event::MouseUp(scale_pos(m)))
-            },
-            Event::MouseMove(m) => {
-                Some(Event::MouseMove(scale_pos(m)))
-            },
-            _ => None
+            Event::MouseDown(m) => Some(Event::MouseDown(scale_pos(m))),
+            Event::MouseUp(m) => Some(Event::MouseUp(scale_pos(m))),
+            Event::MouseMove(m) => Some(Event::MouseMove(scale_pos(m))),
+            _ => None,
         };
 
         maybe_event
@@ -51,7 +44,7 @@ where
 impl<T, W> Widget<T> for Transform<T, W>
 where
     T: Data,
-    W: Widget<T>
+    W: Widget<T>,
 {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
         match event {
@@ -69,8 +62,11 @@ where
             _ => {}
         }
 
-        let mouse_scrolled_event = event.transform_scroll(-self.translation, ctx.size().to_rect(), true);
-        let mouse_transformed_event = mouse_scrolled_event.map(|e| self.transform_event_scale(&e)).flatten();
+        let mouse_scrolled_event =
+            event.transform_scroll(-self.translation, ctx.size().to_rect(), true);
+        let mouse_transformed_event = mouse_scrolled_event
+            .map(|e| self.transform_event_scale(&e))
+            .flatten();
         let event = mouse_transformed_event.unwrap_or(event.clone());
         self.inner.event(ctx, &event, data, env);
     }
@@ -85,7 +81,12 @@ where
 
     fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &T, env: &Env) -> Size {
         let size = self.inner.layout(ctx, bc, data, env);
-        self.inner.set_layout_rect(ctx, data, env, druid::Rect::from_origin_size((0.0, 0.0), size));
+        self.inner.set_layout_rect(
+            ctx,
+            data,
+            env,
+            druid::Rect::from_origin_size((0.0, 0.0), size),
+        );
         self.inner.set_viewport_offset(self.translation);
         size
     }
@@ -96,4 +97,3 @@ where
         self.inner.paint(ctx, data, env);
     }
 }
-
