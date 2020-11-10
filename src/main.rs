@@ -1,4 +1,4 @@
-use druid::{Data, WidgetPod, Vec2};
+use druid::{Data, WidgetPod, Vec2, Selector};
 use druid::widget::prelude::*;
 
 use druid::widget::TextBox;
@@ -33,7 +33,7 @@ impl Widget<String> for Canvas {
             Event::MouseMove(m) if self.is_move_action_active => {
                 self.translation += m.pos.to_vec2() - self.last_mouse_pos;
                 self.last_mouse_pos = m.pos.to_vec2();
-                self.transform.widget_mut().set_translation(self.translation);
+                ctx.submit_command(druid::Command::new(SET_TRANSLATION_ACTION, self.translation, druid::Target::Auto));
             },
             Event::Wheel(w) => {
                 if w.wheel_delta.y > 0.0 {
@@ -41,7 +41,7 @@ impl Widget<String> for Canvas {
                 } else {
                     self.scale *= 2.0;
                 }
-                self.transform.widget_mut().set_scale(self.scale);
+                ctx.submit_command(druid::Command::new(SET_SCALE_ACTION, self.scale, druid::Target::Auto));
             }
             _ => {}
         }
@@ -67,6 +67,9 @@ impl Widget<String> for Canvas {
     }
 }
 
+const SET_SCALE_ACTION: Selector<f64> = Selector::new("set-scale");
+const SET_TRANSLATION_ACTION: Selector<Vec2> = Selector::new("set-translation");
+
 struct Transform<T: Data, W: Widget<T>> {
     translation: Vec2,
     scale: f64,
@@ -78,20 +81,13 @@ where
     T: Data,
     W: Widget<T>
 {
+
     pub fn new(widget: W) -> Self {
         Self {
             translation: Vec2::ZERO,
             scale: 1.0,
             inner: WidgetPod::new(widget),
         }
-    }
-
-    pub fn set_translation(&mut self, translation: Vec2) {
-        self.translation = translation;
-    }
-
-    pub fn set_scale(&mut self, scale: f64) {
-        self.scale = scale;
     }
 
     pub fn transform_event_scale(&self, event: &Event) -> Option<Event> {
@@ -124,7 +120,21 @@ where
     W: Widget<T>
 {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
-        ctx.request_layout();
+        match event {
+            Event::Command(cmd) => {
+                if cmd.is(SET_SCALE_ACTION) {
+                    ctx.request_layout();
+                    self.scale = *cmd.get_unchecked(SET_SCALE_ACTION);
+                } else if cmd.is(SET_TRANSLATION_ACTION) {
+                    ctx.request_layout();
+                    self.translation = *cmd.get_unchecked(SET_TRANSLATION_ACTION);
+                }
+                ctx.set_handled();
+                return;
+            }
+            _ => {}
+        }
+
         let mouse_scrolled_event = event.transform_scroll(-self.translation, ctx.size().to_rect(), true);
         let mouse_transformed_event = mouse_scrolled_event.map(|e| self.transform_event_scale(&e)).flatten();
         let event = mouse_transformed_event.unwrap_or(event.clone());
