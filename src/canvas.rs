@@ -45,6 +45,7 @@ impl Widget<String> for Canvas {
                     self.translation,
                     druid::Target::Auto,
                 ));
+                ctx.set_handled();
             }
             Event::Wheel(w) => {
                 if w.wheel_delta.y > 0.0 {
@@ -57,6 +58,7 @@ impl Widget<String> for Canvas {
                     self.scale,
                     druid::Target::Auto,
                 ));
+                ctx.set_handled();
             }
             _ => {}
         }

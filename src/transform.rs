@@ -87,7 +87,7 @@ where
             env,
             druid::Rect::from_origin_size((0.0, 0.0), size),
         );
-        self.inner.set_viewport_offset(self.translation);
+        self.inner.set_viewport_offset(-self.translation);
         size
     }
 
